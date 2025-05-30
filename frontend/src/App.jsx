@@ -6,6 +6,7 @@ import Navbar from "./components/Navbar";
 import Home from "./components/Home";
 import Snippet from "./components/Snippet";
 import ViewSnippet from "./components/ViewSnippet";
+import EditSnippet from "./components/EditSnippet";
 
 function App() {
   return (
@@ -18,6 +19,8 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/snippets" element={<Snippet />} />
               <Route path="/snippet/:id" element={<ViewSnippet />} />
+              <Route path="/edit/:id" element={<EditSnippet />} />
+              <Route path="/create" element={<Home />} />
             </Routes>
           </div>
           <Toaster position="top-center" />

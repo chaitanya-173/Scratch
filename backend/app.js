@@ -6,32 +6,38 @@ const express = require("express");
 const { default: mongoose } = require("mongoose");
 const cors = require("cors");
 const DB_PATH =
-  "mongodb+srv://chaitanyachaudhary73:FGGyrjub7QrPXHNf@chaitanya-cluster.7bkyhy1.mongodb.net/todo?retryWrites=true&w=majority&appName=chaitanya-cluster";
+  "mongodb+srv://chaitanyachaudhary73:FGGyrjub7QrPXHNf@chaitanya-cluster.7bkyhy1.mongodb.net/snippet?retryWrites=true&w=majority&appName=chaitanya-cluster";
 
 // Local Module
-const todoItemsRouter = require("./routes/todoItemsRouter");
-const errorsController = require("./controllers/errors");
+const snippetsRouter = require("./routes/snippetsRouter");
+const { pageNotFound, errorHandler } = require("./controllers/errors");
 
 const app = express();
 
-app.use(express.urlencoded());
+// Middleware
+app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cors());
 
-app.use("/api/todo", todoItemsRouter);
+// Routes
+app.use("/api/snippet", snippetsRouter);
 
-app.use(errorsController.pageNotFound);
+// Error handling
+app.use(pageNotFound);
+app.use(errorHandler);
 
-const PORT = 3001;
+// Database connection and server start
+const PORT = process.env.PORT || 3001;
 
 mongoose
   .connect(DB_PATH)
   .then(() => {
-    console.log("Connected to Mongo");
+    console.log("Connected to MongoDB");
     app.listen(PORT, () => {
-      console.log(`Server running on address http://localhost:${PORT}`);
+      console.log(`Server running on http://localhost:${PORT}`);
     });
   })
   .catch((err) => {
-    console.log("Error while connecting to Mongo: ", err);
+    console.error("Error connecting to MongoDB:", err);
+    process.exit(1);
   });

@@ -1,35 +1,34 @@
 import { Calendar, Copy, Edit, Eye, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useSelector, useDispatch } from "react-redux";
-import { useState } from "react";
-import { removeFromSnippets } from "../redux/snippetSlice";
-import { FormatDate } from "../utlis/formatDate";
 import { useNavigate, Link } from "react-router-dom";
+import { fetchSnippets, deleteSnippet } from "../redux/snippetSlice";
+import { FormatDate } from "../utlis/formatDate";
 
 const Snippet = () => {
-  const snippets = useSelector((state) => state.snippet.snippets);
+  const { snippets, loading, error } = useSelector((state) => state.snippet);
   const dispatch = useDispatch();
   const [searchTerm, setSearchTerm] = useState("");
-  const [deleteId, setDeleteId] = useState(null);
   const navigate = useNavigate();
 
-  const handleDelete = (id) => {
-    setDeleteId(id);
-  };
+  useEffect(() => {
+    dispatch(fetchSnippets());
+  }, [dispatch]);
 
-  const confirmDelete = () => {
-    if (deleteId) {
-      dispatch(removeFromSnippets(deleteId));
-      toast.success("Snippet deleted", {
-        position: "top-center",
-        duration: 2000,
-      });
-      setDeleteId(null);
+  const handleDelete = async (id) => {
+    if (window.confirm("Are you sure you want to delete this snippet?")) {
+      try {
+        await dispatch(deleteSnippet(id)).unwrap();
+        toast.success("Snippet deleted successfully");
+      } catch (error) {
+        toast.error(error.message || "Failed to delete snippet");
+      }
     }
   };
 
   const handleEdit = (id) => {
-    navigate(`/?snippetId=${id}`);
+    navigate(`/edit/${id}`);
   };
 
   const handleCopy = (content) => {
@@ -45,6 +44,24 @@ const Snippet = () => {
   const filteredSnippets = snippets.filter((snippet) =>
     snippet.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  if (loading) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <div className="text-2xl text-gray-500 dark:text-gray-400">
+          Loading...
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <div className="text-2xl text-red-500">{error}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-full py-10 max-w-[1200px] mx-auto px-5 lg:px-0">
@@ -70,9 +87,17 @@ const Snippet = () => {
 
         {/* All Snippets */}
         <div className="flex flex-col border border-[rgba(128,121,121,0.3)] py-4 rounded-[0.4rem]">
-          <h2 className="px-4 text-4xl font-bold border-b border-[rgba(128,121,121,0.3)] pb-4 text-black dark:text-white">
-            All Snippets
-          </h2>
+          <div className="px-4 flex justify-between items-center border-b border-[rgba(128,121,121,0.3)] pb-4">
+            <h2 className="text-4xl font-bold text-black dark:text-white">
+              All Snippets
+            </h2>
+            <Link
+              to="/create"
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            >
+              Create New Snippet
+            </Link>
+          </div>
           <div className="w-full px-4 pt-4 flex flex-col gap-y-5">
             {filteredSnippets.length > 0 ? (
               filteredSnippets.map((snippet) => (
@@ -103,11 +128,11 @@ const Snippet = () => {
                         />
                       </button>
                       <button
-                        className="p-2 rounded-[0.2rem] bg-white dark:bg-gray-800 border border-[#c7c7c7] hover:bg-transparent group hover:border-pink-500"
+                        className="p-2 rounded-[0.2rem] bg-white dark:bg-gray-800 border border-[#c7c7c7] hover:bg-transparent group hover:border-red-500"
                         onClick={() => handleDelete(snippet?._id)}
                       >
                         <Trash2
-                          className="text-black dark:text-white group-hover:text-pink-500"
+                          className="text-black dark:text-white group-hover:text-red-500"
                           size={20}
                         />
                       </button>
@@ -133,7 +158,7 @@ const Snippet = () => {
 
                     <div className="gap-x-2 flex text-black dark:text-white">
                       <Calendar size={20} />
-                      {FormatDate(snippet?.createdAt)}
+                      {FormatDate(snippet?.date)}
                     </div>
                   </div>
                 </div>
@@ -146,35 +171,6 @@ const Snippet = () => {
           </div>
         </div>
       </div>
-
-      {/* Delete Confirmation Modal */}
-      {deleteId && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl max-w-md w-full mx-4">
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-              Delete Snippet
-            </h3>
-            <p className="text-gray-600 dark:text-gray-300 mb-6">
-              Are you sure you want to delete this snippet? This action cannot
-              be undone.
-            </p>
-            <div className="flex justify-end gap-4">
-              <button
-                onClick={() => setDeleteId(null)}
-                className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmDelete}
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

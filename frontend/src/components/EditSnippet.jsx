@@ -2,70 +2,56 @@ import { Copy } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useDispatch, useSelector } from "react-redux";
-import { useSearchParams } from "react-router-dom";
-import {
-  createSnippet,
-  updateSnippet,
-  updateDraft,
-  clearDraft,
-} from "../redux/snippetSlice";
+import { useParams, useNavigate } from "react-router-dom";
+import { updateSnippet } from "../redux/snippetSlice";
 
-const Home = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const snippetId = searchParams.get("snippetId");
-  const { snippets, loading, error, draft } = useSelector(
-    (state) => state.snippet
-  );
+const EditSnippet = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { snippets, loading, error } = useSelector((state) => state.snippet);
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
   const { isDarkMode } = useSelector((state) => state.theme);
 
+  useEffect(() => {
+    const snippet = snippets.find((s) => s._id === id);
+    if (snippet) {
+      setTitle(snippet.title);
+      setContent(snippet.content);
+    }
+  }, [id, snippets]);
+
   const handleSubmit = async () => {
-    if (!draft.title.trim() || !draft.content.trim()) {
+    if (!title.trim() || !content.trim()) {
       toast.error("Title and content are required");
       return;
     }
 
     const snippetData = {
-      title: draft.title.trim(),
-      content: draft.content.trim(),
+      title: title.trim(),
+      content: content.trim(),
       date: new Date().toISOString(),
     };
 
     try {
-      if (snippetId) {
-        await dispatch(updateSnippet({ id: snippetId, snippetData })).unwrap();
-        toast.success("Snippet updated successfully");
-      } else {
-        await dispatch(createSnippet(snippetData)).unwrap();
-        toast.success("Snippet created successfully");
-      }
-      dispatch(clearDraft());
-      setSearchParams({});
+      await dispatch(updateSnippet({ id, snippetData })).unwrap();
+      toast.success("Snippet updated successfully");
+      navigate("/snippets");
     } catch (error) {
       toast.error(error.message || "Something went wrong");
     }
   };
 
   const handleCopy = () => {
-    if (draft.content) {
-      navigator.clipboard.writeText(draft.content);
+    if (content) {
+      navigator.clipboard.writeText(content);
       toast.success("Copied to Clipboard", {
         position: "top-center",
         duration: 2000,
       });
     }
   };
-
-  useEffect(() => {
-    if (snippetId) {
-      const snippet = snippets.find((p) => p._id === snippetId);
-      if (snippet) {
-        dispatch(
-          updateDraft({ title: snippet.title, content: snippet.content })
-        );
-      }
-    }
-  }, [snippetId, snippets, dispatch]);
 
   if (loading) {
     return (
@@ -92,8 +78,8 @@ const Home = () => {
           <input
             type="text"
             placeholder="Snippet Title"
-            value={draft.title}
-            onChange={(e) => dispatch(updateDraft({ title: e.target.value }))}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
             className="w-[80%] text-black dark:text-white bg-transparent border border-input rounded-md p-2 placeholder-gray-500 dark:placeholder-gray-400"
             style={{
               caretColor: isDarkMode ? "#fff" : "#000",
@@ -104,19 +90,15 @@ const Home = () => {
             onClick={handleSubmit}
             disabled={loading}
           >
-            {loading
-              ? "Loading..."
-              : snippetId
-              ? "Update Snippet"
-              : "Create Snippet"}
+            {loading ? "Loading..." : "Update Snippet"}
           </button>
         </div>
 
         <div className="w-full relative">
           <textarea
             placeholder="Enter your code here..."
-            value={draft.content}
-            onChange={(e) => dispatch(updateDraft({ content: e.target.value }))}
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
             className="w-full h-[400px] text-black dark:text-white bg-transparent border border-input rounded-md p-2 placeholder-gray-500 dark:placeholder-gray-400 resize-none font-mono"
             style={{
               caretColor: isDarkMode ? "#fff" : "#000",
@@ -134,4 +116,4 @@ const Home = () => {
   );
 };
 
-export default Home;
+export default EditSnippet;
